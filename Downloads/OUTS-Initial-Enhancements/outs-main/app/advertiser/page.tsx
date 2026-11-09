@@ -39,6 +39,7 @@ export default function AdvertiserDashboard() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [payingId, setPayingId] = useState('');
+  const [paymentReady, setPaymentReady] = useState(false);
   const today = new Date().toISOString().slice(0, 10);
 
   useEffect(() => {
@@ -54,6 +55,8 @@ export default function AdvertiserDashboard() {
     })();
     return () => { live = false; };
   }, [supabase]);
+
+  useEffect(()=>{let live=true;void fetch('/api/payments/config',{cache:'no-store'}).then(r=>r.json()).then((data:{advertisementPaymentsReady?:boolean})=>{if(live)setPaymentReady(Boolean(data.advertisementPaymentsReady));}).catch(()=>{if(live)setPaymentReady(false);});return()=>{live=false;};},[]);
 
   const metrics = {
     total: campaigns.length,
@@ -116,7 +119,7 @@ export default function AdvertiserDashboard() {
       <div className="stat-card"><small>Total advertisements</small><b>{metrics.total}</b></div><div className="stat-card"><small>Active</small><b>{metrics.active}</b></div><div className="stat-card"><small>Pending approval</small><b>{metrics.pending}</b></div><div className="stat-card"><small>Rejected</small><b>{metrics.rejected}</b></div><div className="stat-card"><small>Impressions</small><b>{metrics.impressions}</b></div><div className="stat-card"><small>Clicks</small><b>{metrics.clicks}</b></div><div className="stat-card"><small>Verified spend</small><b>₹{metrics.spend.toLocaleString('en-IN')}</b></div>
     </div>
     <div className="advertiser-topline"><h2>Campaigns</h2><Link href="/advertiser/ads/new" className="btn btn-dark"><Plus size={16} /> Create advertisement</Link></div>
-    <p className="notice" role="status">Payment is verified server-side before an admin can review a campaign. Standard Razorpay Checkout is not escrow, and OUTS does not automatically release task funds.</p>
+    <p className="notice" role="status">{paymentReady?'Payment is verified server-side before an admin can review a campaign.':'Advertisement checkout is disabled until server-only Supabase and Razorpay credentials are configured.'} Standard Razorpay Checkout is not escrow.</p>
     {error && <p className="notice account-error" role="alert">{error}</p>}
     {notice && <p className="notice" role="status">{notice}</p>}
     {loading ? <p className="empty-state">Loading campaigns…</p> : campaigns.length ? <div className="ad-campaign-list">{campaigns.map((ad) => <article className="ad-campaign" key={ad.id}>
@@ -124,7 +127,7 @@ export default function AdvertiserDashboard() {
       <p>{ad.description}</p><div className="ad-campaign-meta"><span>{ad.duration_days} days from {ad.starts_at}</span><span>Remaining: {Math.max(0, Math.ceil((new Date(`${ad.starts_at}T00:00:00Z`).getTime() + ad.duration_days * 86400000 - Date.now()) / 86400000))} days</span><span>Payment: {ad.payment_status}</span><span>{ad.impressions} impressions · {ad.clicks} clicks</span><span>CTR: {ad.impressions ? ((ad.clicks / ad.impressions) * 100).toFixed(2) : '0.00'}%</span></div>
       {ad.rejection_reason && <p className="notice account-error">Review note: {ad.rejection_reason}</p>}
       {(ad.status === 'draft' || ad.status === 'rejected' || ad.status === 'pending') && <Link className="text-link" href={`/advertiser/ads/new?edit=${ad.id}`}>Edit campaign</Link>}
-      {['draft','rejected'].includes(ad.status) && !['paid','refunded'].includes(ad.payment_status) && <button type="button" className="btn btn-dark ad-pay-button" disabled={Boolean(payingId)} onClick={() => void payCampaign(ad)}>{payingId === ad.id ? 'Opening checkout…' : `Pay ₹${Number(ad.total_price).toLocaleString('en-IN')} and submit for review`}</button>}
+      {['draft','rejected'].includes(ad.status) && !['paid','refunded'].includes(ad.payment_status) && <button type="button" className="btn btn-dark ad-pay-button" disabled={!paymentReady||Boolean(payingId)} onClick={() => void payCampaign(ad)}>{payingId === ad.id ? 'Opening checkout…' : !paymentReady?'Checkout unavailable — configure credentials':`Pay ₹${Number(ad.total_price).toLocaleString('en-IN')} and submit for review`}</button>}
       {ad.status === 'rejected' && ad.payment_status === 'paid' && <button type="button" className="btn btn-dark ad-pay-button" disabled={Boolean(payingId)} onClick={() => void resubmitCampaign(ad)}>{payingId === ad.id ? 'Submitting…' : 'Resubmit for review'}</button>}
     </article>)}</div> : <div className="empty-state">No advertisements yet. Create a draft to get started.</div>}
   </main>;

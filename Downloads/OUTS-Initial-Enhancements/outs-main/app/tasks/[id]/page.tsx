@@ -15,6 +15,9 @@ type Task = {
   description: string;
   deadline_at: string | null;
   status: string;
+  payment_required?: boolean;
+  payment_status?: string;
+  attachment_paths?: string[];
 };
 type ReceivedApplication = { id: string; applicant_id: string; cover_message: string; status: string; created_at: string };
 
@@ -34,6 +37,7 @@ export default function TaskDetail() {
   const [busyAction, setBusyAction] = useState(false);
   const [reportReason, setReportReason] = useState('academic_integrity');
   const [reportDetails, setReportDetails] = useState('');
+  const [attachmentLinks, setAttachmentLinks] = useState<{ name:string;url:string }[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -51,6 +55,9 @@ export default function TaskDetail() {
         return;
       }
       setTask(taskData as Task);
+      const paths=(taskData.attachment_paths??[]) as string[];
+      const signed=await Promise.all(paths.map(async path=>{const {data,error:signedError}=await supabase.storage.from('outs-task-attachments').createSignedUrl(path,1800);return signedError||!data?null:{name:path.split('/').at(-1)??'Attachment',url:data.signedUrl};}));
+      setAttachmentLinks(signed.filter((item):item is {name:string;url:string}=>Boolean(item)));
       if (authData.user && taskData.provider_id === authData.user.id) {
         const { data: received, error: applicationError } = await supabase.from('applications')
           .select('id,applicant_id,message,status,created_at').eq('task_id', id).order('created_at', { ascending: false });
@@ -99,7 +106,10 @@ export default function TaskDetail() {
       .eq('id', task.id).eq('provider_id', user.id);
     if (deleteError) setError(`Could not delete task: ${deleteError.message}`);
     else if (!count) setError('The database did not delete the task. It may be protected by policy.');
-    else router.replace('/dashboard');
+    else {
+      if(task.attachment_paths?.length){const {error:filesError}=await supabase.storage.from('outs-task-attachments').remove(task.attachment_paths);if(filesError)setNotice('Task deleted. Some private attachment files could not be cleaned up; contact support.');}
+      router.replace('/dashboard');
+    }
     setBusyAction(false);
   }
 
@@ -141,8 +151,10 @@ export default function TaskDetail() {
         <div className="detail-budget">₹{Number(task.budget).toLocaleString('en-IN')} <small>proposed budget</small></div>
         <p className="detail-description">{task.description}</p>
         <p className="muted">Deadline: {task.deadline_at ? new Date(task.deadline_at).toLocaleString() : 'Flexible'}</p>
+        {attachmentLinks.length>0&&<section className="task-attachments"><b>Attachments</b>{attachmentLinks.map(file=><a key={file.url} href={file.url} target="_blank" rel="noreferrer">{file.name}</a>)}</section>}
         {task.provider_id === user?.id ? <>
-          <div className="notice">This is your task listing · Status: {task.status.replace('_', ' ')}</div>
+          <div className="notice">This is your task · Status: {task.status.replace('_', ' ')}{task.payment_required?` · Payment: ${task.payment_status??'pending'}`:''}</div>
+          {task.payment_required&&task.status==='draft'&&<p className="notice">This task is unpublished and not visible in the marketplace. Task checkout is disabled until compliant Razorpay Route settlement is configured and tested.</p>}
           <div className="task-actions detail-actions">
             {task.status === 'open' && <button type="button" disabled={busyAction} onClick={cancelTask}>Cancel task</button>}
             {task.status === 'open' && applications.some((application) => application.status === 'accepted') && <button type="button" disabled={busyAction} onClick={() => void transitionTask('in_progress')}>Start task</button>}

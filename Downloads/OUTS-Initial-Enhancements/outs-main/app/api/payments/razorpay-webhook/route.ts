@@ -46,15 +46,15 @@ export async function POST(request: Request) {
       paymentId = refundEntity.payment_id; refundId = refundEntity.id ?? null; state = 'refunded';
     }
     if (state) {
-      let lookup = admin.from('payment_transactions').select('id,amount_paise,razorpay_order_id,razorpay_payment_id,status');
+      let lookup = admin.from('payment_transactions').select('id,task_id,amount_paise,razorpay_order_id,razorpay_payment_id,status');
       lookup = orderId ? lookup.eq('razorpay_order_id', orderId) : lookup.eq('razorpay_payment_id', paymentId!);
       const { data: transaction, error: lookupError } = await lookup.maybeSingle();
       if (lookupError || !transaction) throw new Error('Payment ledger reference was not found.');
       if (state === 'paid' && (transaction.amount_paise !== paymentEntity?.amount || transaction.razorpay_order_id !== orderId)) throw new Error('Payment amount or order does not match the ledger.');
       if (state === 'refunded' && transaction.razorpay_payment_id !== paymentId) throw new Error('Refund does not match a captured payment.');
-      const { error: updateError } = await admin.rpc('set_verified_ad_payment_state', {
-        p_transaction_id: transaction.id, p_state: state, p_payment_id: state === 'refunded' ? paymentId : paymentId, p_refund_id: refundId,
-      });
+      const { error: updateError } = transaction.task_id
+        ? await admin.rpc('finalize_verified_task_payment', { p_transaction_id:transaction.id,p_state:state,p_payment_id:paymentId,p_refund_id:refundId })
+        : await admin.rpc('set_verified_ad_payment_state', { p_transaction_id:transaction.id,p_state:state,p_payment_id:paymentId,p_refund_id:refundId });
       if (updateError) throw new Error(updateError.message);
     }
     await admin.from('razorpay_webhook_events').update({ processed_at: new Date().toISOString(), processing_error: null }).eq('event_id', eventId);

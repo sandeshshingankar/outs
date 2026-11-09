@@ -227,6 +227,7 @@ export default function Learn() {
         <h1>Learn from your classmates</h1>
         <p className="muted">Offer tutoring or find a peer who can help you learn a skill.</p>
         <div className="mode-switch"><span>Current mode: <b>{mode === 'teacher' ? 'Teacher' : 'Student'}</b></span><Link href="/dashboard">Change mode in dashboard</Link></div>
+        <Link className="btn btn-light" href="/learn/requests">Learn Requests — post what you want to learn or send a teaching offer</Link>
       </div>
       {mode === 'teacher' && <section className="form-card compact">
         <h2>{editing ? 'Edit learning service' : 'Offer a learning session'}</h2>

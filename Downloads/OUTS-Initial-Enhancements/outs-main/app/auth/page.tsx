@@ -10,7 +10,7 @@ export default function AuthPage(){
  function destination(){const requested=new URLSearchParams(window.location.search).get('next');if(!requested?.startsWith('/'))return '/dashboard';const target=new URL(requested,window.location.origin);return target.origin===window.location.origin?`${target.pathname}${target.search}${target.hash}`:'/dashboard';}
  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setNotice('');const supabase=createClient();
   try{
-   if(mode==='forgot'){const {error}=await supabase.auth.resetPasswordForEmail(email,{redirectTo:`${window.location.origin}/auth/reset-password`});setNotice(error?`Could not request a reset: ${error.message}`:'If an account exists for this email, a password reset link has been sent.');return;}
+   if(mode==='forgot'){const normalizedEmail=email.trim();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)){setNotice('Enter a valid email address.');return;}const {error}=await supabase.auth.resetPasswordForEmail(normalizedEmail,{redirectTo:`${window.location.origin}/auth/reset-password?flow=recovery`});setNotice(error?`Could not request a reset: ${error.message}`:'If an account exists for this email, a password reset link has been sent.');return;}
    if(mode==='signup'){
     const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:name.trim(),college_name:college.trim()}}});
     if(error){setNotice(error.message);return;}

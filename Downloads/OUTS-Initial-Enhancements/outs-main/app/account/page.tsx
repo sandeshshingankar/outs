@@ -37,6 +37,9 @@ export default function AccountPage() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -189,6 +192,28 @@ export default function AccountPage() {
     router.refresh();
   }
 
+  async function deleteAccount(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (deleteConfirmation !== 'DELETE' || !deletePassword) {
+      setError('Enter your password and type DELETE exactly to confirm.');
+      return;
+    }
+    setBusy(true); setError(''); setNotice('');
+    try {
+      const response = await fetch('/api/account', {
+        method: 'DELETE', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ password: deletePassword, confirmation: deleteConfirmation }),
+      });
+      const result = await response.json() as { error?: string };
+      if (!response.ok) { setError(result.error ?? 'Account deletion could not be completed.'); setBusy(false); return; }
+      await supabase.auth.signOut({ scope: 'global' });
+      router.replace('/'); router.refresh();
+    } catch {
+      setError('Account deletion could not be completed. Please contact support before retrying.');
+      setBusy(false);
+    }
+  }
+
   if (loading) return <main className="app-loading">Loading your account…</main>;
 
   return (
@@ -242,9 +267,13 @@ export default function AccountPage() {
       </section>
 
       <section className="form-card account-card danger-card" aria-labelledby="delete-heading">
-        <div className="account-section-title"><ShieldAlert /><div><h2 id="delete-heading">Delete account</h2><p className="muted">Permanent deletion is unavailable until the complete schema and legal data-retention requirements are verified.</p></div></div>
-        <p className="notice" role="status">No account or transaction data will be deleted. Contact OUTS support if you need help with your account.</p>
-        <button className="btn btn-danger" type="button" disabled aria-describedby="delete-heading">Account deletion unavailable</button>
+        <div className="account-section-title"><ShieldAlert /><div><h2 id="delete-heading">Delete account</h2><p className="muted">Accounts with task, learning, messaging, moderation, or financial history require a retention review. Those records are not cascade-deleted.</p></div></div>
+        {!deleteOpen ? <button className="btn btn-danger" type="button" disabled={busy} onClick={() => setDeleteOpen(true)}>Continue to delete account</button> : <form className="task-form" onSubmit={deleteAccount}>
+          <p className="notice account-error">This permanently removes your sign-in and profile if the account has no marketplace or audit history. Your profile picture will also be removed.</p>
+          <label>Current password<input type="password" autoComplete="current-password" required value={deletePassword} onChange={(event) => setDeletePassword(event.target.value)} /></label>
+          <label>Type DELETE to confirm<input required value={deleteConfirmation} onChange={(event) => setDeleteConfirmation(event.target.value)} /></label>
+          <div className="account-actions"><button className="btn btn-danger" type="submit" disabled={busy}>{busy ? 'Deleting account…' : 'Delete my account'}</button><button className="btn btn-light" type="button" disabled={busy} onClick={() => { setDeleteOpen(false); setDeletePassword(''); setDeleteConfirmation(''); }}>Cancel</button></div>
+        </form>}
       </section>
     </main>
   );

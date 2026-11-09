@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { ExternalLink, Megaphone } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
-type Advertisement = { id: string; title: string; brand_name: string; description: string; image_path: string | null; destination_url: string; category: string; };
+type Advertisement = { id: string; title: string; brand_name: string; description: string; image_path: string | null; image_url?: string; destination_url: string; category: string; };
 
 function sendEvent(id: string, type: 'impression' | 'click') {
   void fetch('/api/advertisements/event', {
@@ -25,7 +25,13 @@ export default function SponsoredAds() {
         .eq('status','approved').eq('payment_status','paid').lte('starts_at',new Date().toISOString().slice(0,10)).limit(1);
       if (!active || !data) return;
       const eligible = data as Advertisement[];
-      setAds(eligible);
+      const signed = await Promise.all(eligible.map(async (ad) => {
+        if (!ad.image_path) return ad;
+        const { data: image, error: imageError } = await supabase.storage.from('outs-ad-creatives').createSignedUrl(ad.image_path,3600);
+        return imageError || !image ? ad : { ...ad, image_url:image.signedUrl };
+      }));
+      if (!active) return;
+      setAds(signed);
       const today = new Date().toISOString().slice(0,10);
       for (const ad of eligible) {
         const seenKey = `outs-ad-seen:${ad.id}:${today}`;
@@ -39,7 +45,7 @@ export default function SponsoredAds() {
   }, [supabase]);
   if (!ads.length) return null;
   return <section className="sponsored-ad-list" aria-label="Sponsored advertisements">{ads.map((ad) => {
-    const imageUrl = ad.image_path ? supabase.storage.from('outs-ad-creatives').getPublicUrl(ad.image_path).data.publicUrl : null;
+    const imageUrl = ad.image_url ?? null;
     return <article className="sponsored-ad" key={ad.id}>
       <div className="sponsored-ad-copy"><span className="sponsored-label"><Megaphone size={12} /> Advertisement</span><small>{ad.brand_name} · {ad.category}</small><h3>{ad.title}</h3><p>{ad.description}</p><a href={ad.destination_url} target="_blank" rel="noopener noreferrer" onClick={() => sendEvent(ad.id,'click')}>Visit website <ExternalLink size={13} /></a></div>
       {imageUrl && <Image src={imageUrl} alt={`${ad.brand_name} banner`} width={450} height={300} unoptimized />}

@@ -11,6 +11,7 @@ type Conversation = {
   listing_id: string | null;
   task_id: string | null;
   learning_service_id: string | null;
+  learning_request_id: string | null;
   provider_id: string;
   performer_id: string;
   created_at: string;
@@ -43,7 +44,7 @@ export default function MessagesPage() {
 
   const loadConversations = useCallback(async (currentUser: User) => {
     const { data, error: conversationError } = await supabase.from('conversations')
-      .select('id,listing_id,task_id,learning_service_id,provider_id,performer_id,created_at')
+      .select('id,listing_id,task_id,learning_service_id,learning_request_id,provider_id,performer_id,created_at')
       .or(`provider_id.eq.${currentUser.id},performer_id.eq.${currentUser.id}`)
       .order('created_at', { ascending: false });
     if (conversationError) {
@@ -55,27 +56,32 @@ export default function MessagesPage() {
     const peerIds = [...new Set(rows.map((row) => row.provider_id === currentUser.id ? row.performer_id : row.provider_id))];
     const taskIds = [...new Set(rows.flatMap((row) => row.task_id ? [row.task_id] : []))];
     const serviceIds = [...new Set(rows.flatMap((row) => row.learning_service_id ? [row.learning_service_id] : []))];
+    const requestIds = [...new Set(rows.flatMap((row) => row.learning_request_id ? [row.learning_request_id] : []))];
     const listingIds = [...new Set(rows.flatMap((row) => row.listing_id ? [row.listing_id] : []))];
-    const [profileResult, taskResult, serviceResult, listingResult] = await Promise.all([
+    const [profileResult, taskResult, serviceResult, requestResult, listingResult] = await Promise.all([
       peerIds.length ? supabase.from('profiles').select('id,full_name,college').in('id', peerIds) : Promise.resolve({ data: [], error: null }),
       taskIds.length ? supabase.from('tasks').select('id,title').in('id', taskIds) : Promise.resolve({ data: [], error: null }),
       serviceIds.length ? supabase.from('learning_services').select('id,title').in('id', serviceIds) : Promise.resolve({ data: [], error: null }),
+      requestIds.length ? supabase.from('learning_requests').select('id,title').in('id', requestIds) : Promise.resolve({ data: [], error: null }),
       listingIds.length ? supabase.from('listings').select('id,title').in('id', listingIds) : Promise.resolve({ data: [], error: null }),
     ]);
     if (profileResult.error) setError(`Could not load conversation profiles: ${profileResult.error.message}`);
     else setNames(Object.fromEntries((profileResult.data ?? []).map((profile) => [profile.id, profile as ProfileName])));
     if (taskResult.error) setError(`Could not load task conversation titles: ${taskResult.error.message}`);
     if (serviceResult.error) setError(`Could not load teaching conversation titles: ${serviceResult.error.message}`);
+    if (requestResult.error) setError(`Could not load learning request conversation titles: ${requestResult.error.message}`);
     if (listingResult.error) setError(`Could not load listing conversation titles: ${listingResult.error.message}`);
     const titles = new Map<string, string>();
     (taskResult.data ?? []).forEach((task) => titles.set(task.id, task.title));
     (serviceResult.data ?? []).forEach((service) => titles.set(service.id, service.title));
+    (requestResult.data ?? []).forEach((request) => titles.set(request.id, request.title));
     (listingResult.data ?? []).forEach((listing) => titles.set(listing.id, listing.title));
     setConversations(rows.map((row) => ({
       ...row,
       title: (row.listing_id && titles.get(row.listing_id))
         || (row.task_id && titles.get(row.task_id))
         || (row.learning_service_id && titles.get(row.learning_service_id))
+        || (row.learning_request_id && titles.get(row.learning_request_id))
         || 'OUTS conversation',
     })));
   }, [supabase]);
@@ -95,13 +101,16 @@ export default function MessagesPage() {
       const peerId = params.get('with');
       const taskId = params.get('task');
       const serviceId = params.get('service');
+      const requestId = params.get('request');
       if (peerId && uuidPattern.test(peerId) && peerId !== currentUser.id) {
         let contextValid = false;
+        let providerForContext = '';
         if (taskId && uuidPattern.test(taskId)) {
           const { data: task, error: taskError } = await supabase.from('tasks')
             .select('id,provider_id').eq('id', taskId).maybeSingle();
           if (taskError) setError(`Could not verify the task conversation: ${taskError.message}`);
           else if (task?.provider_id === currentUser.id || task?.provider_id === peerId) {
+            providerForContext = task.provider_id;
             const applicantId = task.provider_id === currentUser.id ? peerId : currentUser.id;
             const { data: application, error: applicationError } = await supabase.from('applications')
               .select('id').eq('task_id', taskId).eq('applicant_id', applicantId).maybeSingle();
@@ -114,23 +123,37 @@ export default function MessagesPage() {
           if (serviceError) setError(`Could not verify the teaching service: ${serviceError.message}`);
           else if (service?.status === 'active' && service.provider_id === peerId) {
             contextValid = true;
+            providerForContext = service.provider_id;
           } else if (service?.status === 'active' && service.provider_id === currentUser.id) {
             const { data: request, error: requestError } = await supabase.from('teaching_session_requests')
               .select('id').eq('service_id', serviceId).eq('provider_id', currentUser.id)
               .eq('student_id', peerId).in('status', ['requested', 'accepted', 'scheduled', 'completed']).maybeSingle();
             if (requestError) setError(`Could not verify the teaching request: ${requestError.message}`);
             else contextValid = Boolean(request);
+            providerForContext = currentUser.id;
+          }
+        } else if (requestId && uuidPattern.test(requestId)) {
+          const { data: learningRequest, error: requestError } = await supabase.from('learning_requests')
+            .select('id,student_id,status').eq('id', requestId).maybeSingle();
+          if (requestError) setError(`Could not verify the learning request: ${requestError.message}`);
+          else if (learningRequest && ['open','fulfilled'].includes(learningRequest.status)) {
+            const teacherId = learningRequest.student_id === currentUser.id ? peerId : currentUser.id;
+            if (learningRequest.student_id === (currentUser.id === teacherId ? peerId : currentUser.id)) {
+              const { data: offer, error: offerError } = await supabase.from('learning_offers').select('id')
+                .eq('request_id', requestId).eq('teacher_id', teacherId).in('status',['pending','accepted','rejected']).maybeSingle();
+              if (offerError) setError(`Could not verify the teaching offer: ${offerError.message}`);
+              else contextValid = Boolean(offer);
+            }
+            providerForContext = teacherId;
           }
         }
         if (!contextValid) {
           setError('A conversation can only be started from an active teaching service or a task application.');
         } else {
-          const providerId = serviceId
-            ? (await supabase.from('learning_services').select('provider_id').eq('id', serviceId).single()).data?.provider_id
-            : taskId ? (await supabase.from('tasks').select('provider_id').eq('id', taskId).single()).data?.provider_id : '';
+          const providerId = providerForContext;
           const performerId = providerId === currentUser.id ? peerId : currentUser.id;
-          const context = serviceId ? 'learning_service_id' : 'task_id';
-          const contextId = serviceId ?? taskId!;
+          const context = serviceId ? 'learning_service_id' : requestId ? 'learning_request_id' : 'task_id';
+          const contextId = serviceId ?? requestId ?? taskId!;
           const lookup = supabase.from('conversations').select('id').eq(context, contextId)
             .eq('provider_id', providerId).eq('performer_id', performerId).maybeSingle();
           const { data: existing, error: lookupError } = await lookup;
@@ -144,6 +167,7 @@ export default function MessagesPage() {
                 performer_id: performerId,
                 task_id: taskId,
                 learning_service_id: serviceId,
+                learning_request_id: requestId,
               })
               .select('id')
               .single();
