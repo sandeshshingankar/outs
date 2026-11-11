@@ -14,7 +14,7 @@ export async function GET() {
   }
   if (profile?.role !== 'admin') return NextResponse.json({ error: 'Admin access required.' }, { status: 403 });
 
-  const [profiles, studentsMode, teachersMode, tasks, openTasks, inProgressTasks, completedTasks, cancelledTasks, applications, services, activeServices, newUsers, adCount, userRows, taskRows, reports, payments, moderationEvents, learningRequests, learningOffers, sessionRequests, serviceRows, requestRows, auditRows, taskApplications] = await Promise.all([
+  const [profiles, studentsMode, teachersMode, tasks, openTasks, inProgressTasks, completedTasks, cancelledTasks, applications, services, activeServices, newUsers, adCount, userRows, taskRows, reports, payments, moderationEvents, learningRequests, learningOffers, sessionRequests, serviceRows, requestRows, auditRows, taskApplications, partnerRequestsResult, partnerBookingsResult] = await Promise.all([
     supabase.from('profiles').select('id', { count: 'exact', head: true }),
     supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('active_mode','student'),
     supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('active_mode','teacher'),
@@ -40,6 +40,8 @@ export async function GET() {
     supabase.from('learning_requests').select('id,title,topic,category,student_id,level,session_type,budget_per_hour,status,created_at').order('created_at',{ascending:false}).limit(100),
     supabase.from('admin_audit_log').select('id,actor_id,action,target_type,target_id,reason,details,created_at').order('created_at',{ascending:false}).limit(100),
     supabase.from('applications').select('task_id,status').not('task_id','is',null).limit(1000),
+    supabase.from('partner_requests').select('id,title,city,budget,status,created_at,requester_id,partner_category_id').order('created_at',{ascending:false}).limit(50),
+    supabase.from('partner_bookings').select('id,request_id,requester_id,provider_id,final_price,status,created_at').order('created_at',{ascending:false}).limit(50),
   ]);
   const failure = [profiles, tasks, applications, services].find((result) => result.error);
   if (failure?.error) {
@@ -87,8 +89,12 @@ export async function GET() {
     learningServices: serviceRows.error ? [] : serviceRows.data ?? [],
     learningRequests: requestRows.error ? [] : requestRows.data ?? [],
     auditLog: auditRows.error ? [] : auditRows.data ?? [],
+    partnerRequestCount: partnerRequestsResult.count ?? 0,
+    partnerBookingCount: partnerBookingsResult.count ?? 0,
+    partnerRequests: partnerRequestsResult.error ? [] : partnerRequestsResult.data ?? [],
+    partnerBookings: partnerBookingsResult.error ? [] : partnerBookingsResult.data ?? [],
     commission: null,
-    dataWarnings: [userRows.error, taskRows.error, reports.error, payments.error, moderationEvents.error, learningRequests.error, learningOffers.error, sessionRequests.error, serviceRows.error, requestRows.error, auditRows.error,taskApplications.error,financialSummaryResult.error,pendingAdsResult.error].filter(Boolean).map((error) => error?.message),
+    dataWarnings: [userRows.error, taskRows.error, reports.error, payments.error, moderationEvents.error, learningRequests.error, learningOffers.error, sessionRequests.error, serviceRows.error, requestRows.error, auditRows.error,taskApplications.error,financialSummaryResult.error,pendingAdsResult.error,partnerRequestsResult.error,partnerBookingsResult.error].filter(Boolean).map((error) => error?.message),
   });
 }
 

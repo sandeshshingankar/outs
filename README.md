@@ -16,6 +16,8 @@ OUTS is a Next.js 15 / React 19 campus marketplace using Supabase Auth, Postgres
 - `/auth/reset-password` secure reset-link password update
 - `/account` profile, avatar, password, sessions, and account deletion
 - `/dashboard` workspace and student/teacher mode
+- `/partner` OUTS Partner marketplace landing page and activity requests
+- `/partner/new` create a paid activity request
 - `/tasks` marketplace, `/tasks/new` task draft, `/tasks/[id]` task details
 - `/learn` teacher services and `/learn/requests` student learning requests/teacher offers
 - `/messages` participant conversations

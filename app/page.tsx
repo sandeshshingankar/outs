@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 import { ArrowRight, ArrowUpRight, BookOpen, BriefcaseBusiness, Code2, FileText, GraduationCap, Menu, MessageCircle, Presentation, Search, ShieldCheck, Sparkles, Wallet, X, Zap } from 'lucide-react';
 
@@ -22,7 +23,7 @@ export default function Home() {
       <header className="nav wrap">
         <a className="brand" href="#top" aria-label="OUTS home"><span className="brand-mark">O</span><span>OUTS<span className="brand-dot">.</span></span></a>
         <nav className={menuOpen ? 'nav-links open' : 'nav-links'}>
-          <a href="#explore" onClick={() => setMenuOpen(false)}>Explore work</a><a href="#how" onClick={() => setMenuOpen(false)}>How it works</a><a href="#learn" onClick={() => setMenuOpen(false)}>Peer learning</a>
+          <a href="#explore" onClick={() => setMenuOpen(false)}>Explore work</a><a href="#how" onClick={() => setMenuOpen(false)}>How it works</a><a href="#learn" onClick={() => setMenuOpen(false)}>Peer learning</a><Link href="/partner" onClick={() => setMenuOpen(false)}>OUTS Partner</Link>
         </nav>
         <div className="nav-actions"><a className="login" href="/auth">Log in</a><a className="btn btn-dark btn-small" href="/auth">Join OUTS <ArrowUpRight size={15}/></a></div>
         <button className="mobile-menu" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle navigation">{menuOpen ? <X/> : <Menu/>}</button>

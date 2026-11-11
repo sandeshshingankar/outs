@@ -151,6 +151,7 @@ export default function Dashboard() {
       <Link className="side-active" href="/dashboard"><ClipboardList /> Overview</Link>
       <Link href="/tasks"><Search /> Browse tasks</Link>
       <Link href="/tasks/new"><Plus /> Post a task</Link>
+      <Link href="/partner"><ShieldCheck /> OUTS Partner</Link>
       <Link href="/learn"><GraduationCap /> Peer learning</Link>
       <Link href="/messages"><MessageCircle /> Messages</Link>
       <Link href="/notifications"><Bell /> Notifications {unread > 0 && <span className="unread-badge">{unread}</span>}</Link>
