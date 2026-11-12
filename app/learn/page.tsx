@@ -93,7 +93,7 @@ export default function Learn() {
   async function saveService(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!user) {
-      router.push('/auth');
+      router.push('/auth?mode=login&next=%2Flearn');
       return;
     }
     if (title.trim().length < 5 || !skill.trim() || !Number.isFinite(Number(price)) || Number(price) <= 0) {

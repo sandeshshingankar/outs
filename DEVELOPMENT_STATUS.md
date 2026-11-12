@@ -10,6 +10,8 @@
 - Admin dashboard: users, task states and applications, task/report moderation, student learning requests, teaching services and bookings, advertisement review/metrics/creative previews, payment records, and append-only audit events.
 - Advertiser drafts, private creative storage, sponsored placements for approved/paid/scheduled ads, event tracking, and server-verified Razorpay advertisement checkout/webhooks.
 - Video-provider interface only. No video vendor or live-room integration is configured.
+- OUTS Reuse workspace code: verified-campus sell/free/exchange/request-rent listings, private photos, request lifecycle, favorites, reports, participant conversation integration, notifications, and an admin review panel. It is not deployable until its additive migration is reviewed and applied to the intended Supabase project.
+- A global assistant widget is mounted in the root layout. It uses deterministic guidance and same-campus database retrieval; it does not make external model calls. Authenticated listing search depends on the Rent and Reuse database schemas.
 
 ## Payment and settlement boundary
 
@@ -42,3 +44,5 @@ The brief specifies repository `sandeshshingankar/outs`, production branch `main
 `npm ci` completed (316 packages, zero audit vulnerabilities), `npm run lint` passed without warnings, `npx tsc --noEmit` passed, and `npm run build` passed without warnings. Production-mode smoke checks returned 200 for `/`, `/auth`, and `/auth/reset-password`; the protected `/learn/requests` route redirected unauthenticated access, `/api/payments/config` correctly reported both payment flows unavailable, and unauthenticated account deletion returned 401. These checks do not validate authenticated flows.
 
 No authenticated test account, email inbox, Razorpay credentials, Route-linked account, or live deployment URL was supplied, so the reset-email, deletion-with-data, task payment, advertiser checkout, admin-role, and end-to-end marketplace journeys were not run. Supabase security advisors still report leaked-password protection disabled. Two tables have RLS enabled with no direct policies by design (`advertisement_events` and `razorpay_webhook_events`); access is server/function mediated. Performance advisors still report 17 auth-policy init-plan warnings, 12 multiple-permissive-policy warnings, and 28 currently unused indexes; foreign-key index warnings were cleared by the additive index migration. Review these dashboard advisories before launch.
+
+The new Reuse migration filename is exactly `supabase/migrations/202611170001_outs_reuse_marketplace.sql`. It has not been applied in this workspace. The previously documented connected-project migration history does not establish whether the Rent, PayPal, or new Reuse migrations are present remotely; inspect the target project's history before any application. Do not apply a production migration without approval.

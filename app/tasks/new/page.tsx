@@ -27,7 +27,7 @@ export default function NewTask() {
 
   useEffect(()=>{
     let active=true;
-    void (async()=>{const {data,error:authError}=await supabase.auth.getUser();if(!active)return;if(authError||!data.user){router.replace('/auth?next=/tasks/new');return;}setUser(data.user);})();
+    void (async()=>{const {data,error:authError}=await supabase.auth.getUser();if(!active)return;if(authError||!data.user){router.replace('/auth?mode=login&next=%2Ftasks%2Fnew');return;}setUser(data.user);})();
     return ()=>{active=false;};
   },[router,supabase]);
 

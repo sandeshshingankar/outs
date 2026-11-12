@@ -11,7 +11,7 @@ type Profile = {
   full_name: string | null;
   college: string | null;
   course: string | null;
-  year_of_study: number | null;
+  year_of_study: string | null;
   bio: string | null;
   skills: string[] | null;
   avatar_path: string | null;
@@ -47,7 +47,7 @@ export default function AccountPage() {
       const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
       if (!active) return;
       if (authError || !currentUser) {
-        router.replace('/auth');
+        router.replace('/auth?mode=login&next=%2Faccount');
         return;
       }
       setUser(currentUser);
@@ -92,7 +92,7 @@ export default function AccountPage() {
       full_name: name.trim(),
       college: college.trim(),
       course: course.trim(),
-      year_of_study: yearOfStudy.trim() ? Number(yearOfStudy) : null,
+      year_of_study: yearOfStudy.trim() || null,
       bio: bio.trim(),
       skills: skills.split(',').map((skill) => skill.trim()).filter(Boolean),
     };

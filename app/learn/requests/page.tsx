@@ -80,7 +80,7 @@ export default function LearningRequestsPage() {
     let active = true;
     void (async () => {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
-      if (authError || !user) { router.replace('/auth?next=%2Flearn%2Frequests'); return; }
+      if (authError || !user) { router.replace('/auth?mode=login&next=%2Flearn%2Frequests'); return; }
       const { data: profile, error: profileError } = await supabase.from('profiles').select('active_mode').eq('id',user.id).single();
       if (!active) return;
       if (profileError) setError(`Could not load your marketplace mode: ${profileError.message}`);

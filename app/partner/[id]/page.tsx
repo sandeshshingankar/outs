@@ -98,7 +98,7 @@ export default function PartnerRequestDetail() {
   async function submitOffer(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!user || !request) {
-      router.push('/auth?next=%2Fpartner%2Fnew');
+      router.push(`/auth?mode=login&next=${encodeURIComponent(`/partner/${id}`)}`);
       return;
     }
     if (request.requester_id === user.id) {

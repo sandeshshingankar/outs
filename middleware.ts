@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-const protectedPaths = ['/account', '/admin', '/advertiser', '/dashboard', '/learn', '/messages', '/notifications', '/tasks', '/rent'];
+const protectedPaths = ['/account', '/admin', '/advertiser', '/dashboard', '/learn', '/messages', '/notifications', '/tasks', '/rent', '/reuse'];
 
 export async function middleware(request: NextRequest) {
   const isProtected = protectedPaths.some((path) =>
@@ -31,6 +31,7 @@ export async function middleware(request: NextRequest) {
   if (error || !user) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/auth';
+    loginUrl.searchParams.set('mode', 'login');
     loginUrl.searchParams.set('next', `${request.nextUrl.pathname}${request.nextUrl.search}`);
     return NextResponse.redirect(loginUrl);
   }
@@ -52,5 +53,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/account/:path*', '/admin/:path*', '/advertiser/:path*', '/dashboard/:path*', '/learn/:path*', '/messages/:path*', '/notifications/:path*', '/tasks/:path*', '/rent/:path*'],
+  matcher: ['/account/:path*', '/admin/:path*', '/advertiser/:path*', '/dashboard/:path*', '/learn/:path*', '/messages/:path*', '/notifications/:path*', '/tasks/:path*', '/rent/:path*', '/reuse/:path*'],
 };

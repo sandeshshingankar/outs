@@ -76,7 +76,7 @@ export default function TaskDetail() {
 
   async function apply(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!user) { router.push('/auth'); return; }
+    if (!user) { router.push(`/auth?mode=login&next=${encodeURIComponent(`/tasks/${id}`)}`); return; }
     setBusy(true);
     setNotice('');
     setError('');

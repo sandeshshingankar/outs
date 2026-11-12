@@ -35,14 +35,15 @@ Private evidence files use the `outs-rent-private` bucket; listing images use
 
 ## Financial and workflow gates
 
-Rental and deposit ledger rows remain disabled. Owner-approved bookings have
-an optional PayPal Sandbox-only rental checkout, gated by the additive
-`202611160001_rent_paypal_payments.sql` migration, server credentials, and a
-manually reviewed INR/USD demo quote. PayPal's REST currency list does not
-include INR, so the Sandbox order is USD; the deposit and renter fee are not
-collected. Sandbox is not a real money transfer. OUTS does not provide escrow,
-refunds, or seller payouts. The existing advertisement Razorpay integration is
-not called. Commission settings remain estimates only.
+Rental and deposit ledger rows remain disabled. Booking requests require owner
+approval. Eligible approved bookings have an optional PayPal Sandbox-only
+rental checkout, gated by `supabase/migrations/202611160001_rent_paypal_payments.sql`,
+server credentials, and a manually reviewed INR/USD demo quote. PayPal's REST
+currency list does not include INR, so the Sandbox order is USD; the deposit
+and renter fee are not collected. Sandbox is not a real-money payment. OUTS
+does not provide escrow, refunds, or seller payouts. The existing
+advertisement Razorpay integration is not called. Commission settings remain
+estimates only.
 
 Bookings can be requested, approved/rejected, or cancelled. Later handover,
 return, completion, dispute, evidence, and review schema/policies are reserved
@@ -52,6 +53,9 @@ Do not treat an approved booking as paid or confirmed.
 ## Manual verification checklist
 
 - Apply migration and verify all RLS policies/functions compile in Supabase.
+- Apply `202611150001_outs_rent.sql` before the dependent PayPal migration.
+  Inspect project migration history and test on a non-production project;
+  production application requires approval.
 - Enable one college and verify both existing profile verification flags are
   required.
 - Create a listing; confirm it is pending until an admin approves it.

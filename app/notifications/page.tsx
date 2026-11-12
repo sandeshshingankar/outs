@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { ArrowLeft, Bell, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { normalizeNotifications, type NotificationItem } from '@/lib/notifications';
-type NotificationPreferences = { applications: boolean; messages: boolean; teaching: boolean; tasks: boolean; advertisements: boolean; payments: boolean; account: boolean };
-const defaultPreferences: NotificationPreferences = { applications: true, messages: true, teaching: true, tasks: true, advertisements: true, payments: true, account: true };
+type NotificationPreferences = { applications: boolean; messages: boolean; teaching: boolean; tasks: boolean; reuse: boolean; advertisements: boolean; payments: boolean; account: boolean };
+const defaultPreferences: NotificationPreferences = { applications: true, messages: true, teaching: true, tasks: true, reuse: true, advertisements: true, payments: true, account: true };
 
 function safeInternalLink(value: string | null) {
   return value?.startsWith('/') && !value.startsWith('//') ? value : null;
@@ -55,7 +55,7 @@ export default function NotificationsPage() {
     if (!userId) return;
     void (async () => {
       const { data, error: preferenceError } = await supabase.from('notification_preferences')
-        .select('applications,messages,teaching,tasks,advertisements,payments,account').eq('user_id',userId).maybeSingle();
+        .select('applications,messages,teaching,tasks,reuse,advertisements,payments,account').eq('user_id',userId).maybeSingle();
       if (preferenceError) setError(`Could not load notification preferences: ${preferenceError.message}`);
       else if (data) setPreferences(data as NotificationPreferences);
       setPreferencesReady(true);
@@ -101,10 +101,10 @@ export default function NotificationsPage() {
 
   return <main className="form-page">
     <Link href="/dashboard" className="back-link"><ArrowLeft size={16} /> Dashboard</Link>
-    <header className="list-heading"><p className="eyebrow">YOUR UPDATES</p><h1>Notifications</h1><p className="muted">Task and conversation updates for your account.</p></header>
+    <header className="list-heading"><p className="eyebrow">YOUR UPDATES</p><h1>Notifications</h1><p className="muted">Marketplace and conversation updates for your account.</p></header>
     {error && <p className="notice account-error" role="alert">{error}</p>}
     <section className="panel notification-preferences"><h2>Notification preferences</h2><p className="muted">Choose which in-app updates you receive.</p><div className="preference-grid">{([
-      ['applications','Task applications'],['tasks','Task progress'],['messages','New messages'],['teaching','Teaching requests'],['advertisements','Advertisement reviews'],['payments','Payment updates'],['account','Account updates'],
+      ['applications','Task applications'],['tasks','Task progress'],['messages','New messages'],['teaching','Teaching requests'],['reuse','Reuse requests'],['advertisements','Advertisement reviews'],['payments','Payment updates'],['account','Account updates'],
     ] as Array<[keyof NotificationPreferences,string]>).map(([key,label]) => <label key={key}><input type="checkbox" checked={preferences[key]} disabled={!preferencesReady || savingPreference === key} onChange={(event) => void updatePreference(key,event.target.checked)} />{label}</label>)}</div></section>
     <section className="notification-list" aria-label="Notifications">
       {loading && <p className="empty-state">Loading notifications…</p>}

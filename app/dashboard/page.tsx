@@ -34,7 +34,7 @@ export default function Dashboard() {
     const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
     if (authError || !currentUser) {
       setError(authError?.message ?? 'Your session has expired. Please sign in again.');
-      router.replace('/auth?next=%2Fdashboard');
+      router.replace('/auth?mode=login&next=%2Fdashboard');
       setLoading(false);
       return;
     }
@@ -152,6 +152,7 @@ export default function Dashboard() {
       <Link href="/tasks"><Search /> Browse tasks</Link>
       <Link href="/tasks/new"><Plus /> Post a task</Link>
       <Link href="/partner"><ShieldCheck /> OUTS Partner</Link>
+      <Link href="/reuse"><BriefcaseBusiness /> OUTS Reuse</Link>
       <Link href="/rent"><BriefcaseBusiness /> OUTS Rent</Link>
       <Link href="/learn"><GraduationCap /> Peer learning</Link>
       <Link href="/messages"><MessageCircle /> Messages</Link>

@@ -44,7 +44,7 @@ export default function NewPartnerRequest() {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (!active) return;
       if (authError || !user) {
-        router.replace('/auth?next=%2Fpartner%2Fnew');
+        router.replace('/auth?mode=login&next=%2Fpartner%2Fnew');
         return;
       }
       const [categoryResult, profileResult] = await Promise.all([
