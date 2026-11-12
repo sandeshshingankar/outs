@@ -120,7 +120,11 @@ export async function POST(request: Request) {
     return NextResponse.json({
       answer: 'I can help you navigate OUTS. Sign in with a verified campus profile to search real listings. Reuse supports sell, free, exchange, and request-based rent; RentFlow requests require owner approval.',
       results: [],
-      suggestions: [{ label: 'Sign in', href: '/auth' }, { label: 'OUTS Reuse', href: '/auth?next=%2Freuse' }, { label: 'OUTS Rent', href: '/auth?next=%2Frent' }],
+      suggestions: [
+        { label: 'Sign in', href: '/auth?mode=login' },
+        { label: 'OUTS Reuse', href: '/auth?mode=login&next=%2Freuse' },
+        { label: 'OUTS Rent', href: '/auth?mode=login&next=%2Frent' },
+      ],
     }, { headers: { 'cache-control': 'no-store' } });
   }
 
