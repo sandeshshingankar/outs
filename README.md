@@ -24,6 +24,22 @@ OUTS is a Next.js 15 / React 19 campus marketplace using Supabase Auth, Postgres
 - `/notifications` notification inbox and preferences
 - `/admin` server-authorized control panel
 - `/advertiser` campaign dashboard and `/advertiser/ads/new` advertisement draft
+- `/rent` rental discovery, `/rent/assistant` grounded AI search, `/rent/my` bookings and checkout
+
+## OUTS RentFlow AI and PayPal Sandbox
+
+OUTS Rent reuses the existing Supabase campus verification and rental tables. Its assistant searches published listings from the signed-in user's campus and returns database-backed recommendations and price estimates. Optional `OPENAI_API_KEY` supplies natural language explanations; database search still works without it.
+
+PayPal checkout is available only for owner-approved bookings and only when configured for Sandbox. The server calculates the amount from the listing price and requested dates, verifies PayPal capture status and exact amount, and then records the payment. Sandbox transactions are demonstrations only. OUTS does not provide escrow, seller payouts, or refunds.
+
+Review `OUTS_RENT.md`, `docs/ARCHITECTURE.md`, `docs/AI_ASSISTANT.md`, `docs/PAYPAL_INTEGRATION.md`, and `docs/TESTING.md`. Inspect the connected project's migration history before applying `supabase/migrations/202611160001_rent_paypal_payments.sql`. No database migration has been applied from this workspace.
+
+Additional server environment variables:
+
+- `PAYPAL_CLIENT_ID` and `PAYPAL_CLIENT_SECRET` — PayPal Sandbox app credentials; secret is server-only.
+- `PAYPAL_BASE_URL` — Sandbox API endpoint (`https://api-m.sandbox.paypal.com`).
+- `PAYPAL_INR_PER_USD` — manually reviewed INR/USD demo quote; PayPal checkout uses USD because INR is not in PayPal's current REST currency list.
+- `OPENAI_API_KEY` — optional, server-only assistant explanation key.
 
 ## Payment and learning limitations
 

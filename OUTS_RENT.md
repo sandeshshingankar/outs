@@ -35,11 +35,14 @@ Private evidence files use the `outs-rent-private` bucket; listing images use
 
 ## Financial and workflow gates
 
-Rental and deposit ledger rows are created with `disabled` status. Rent has no
-checkout, webhook, escrow, refund, or payout route. The existing advertisement
-payment integration is not called. The commission basis-point settings are
-centralized in `rent_settings`; they are estimates only until a provider model
-and legal settlement path are approved.
+Rental and deposit ledger rows remain disabled. Owner-approved bookings have
+an optional PayPal Sandbox-only rental checkout, gated by the additive
+`202611160001_rent_paypal_payments.sql` migration, server credentials, and a
+manually reviewed INR/USD demo quote. PayPal's REST currency list does not
+include INR, so the Sandbox order is USD; the deposit and renter fee are not
+collected. Sandbox is not a real money transfer. OUTS does not provide escrow,
+refunds, or seller payouts. The existing advertisement Razorpay integration is
+not called. Commission settings remain estimates only.
 
 Bookings can be requested, approved/rejected, or cancelled. Later handover,
 return, completion, dispute, evidence, and review schema/policies are reserved
@@ -60,6 +63,7 @@ Do not treat an approved booking as paid or confirmed.
   accepted offer and one booking at most.
 - Confirm clients cannot change booking, payment, deposit, commission, ledger,
   or moderation state directly.
-- Confirm payment controls remain disabled and evidence remains private.
+- Confirm payment succeeds only after PayPal Sandbox capture verification and
+  evidence remains private.
 - Test existing Tasks, Learn, Partner, auth, ads, and payment flows for
   regression.
