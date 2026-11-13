@@ -132,7 +132,9 @@ export default function RentPayPalCheckout({
   }
 
   return (
-    <div>
+    <div className="rent-checkout-panel">
+      <b className="rent-checkout-title">Proceed to Pay</b>
+      <small>Continue with the secure PayPal Sandbox checkout below. Payment is only recorded after server-side verification.</small>
       {rate !== null && <small>Sandbox quote: ₹{(amountPaise / 100).toLocaleString('en-IN')} rent ≈ ${(amountPaise / rate / 100).toFixed(2)} USD at ₹{rate.toFixed(2)}/USD. Deposit excluded.</small>}
       <div ref={ref} />
       {busy && <small>Verifying PayPal Sandbox payment…</small>}
